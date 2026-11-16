@@ -30,6 +30,12 @@ nav button.on{color:var(--ac);font-weight:700}
 .ex:first-of-type{border:0}.ex span:last-child{color:var(--mut);white-space:nowrap;font-size:14px}
 img.ph{width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#000;margin-top:8px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.two img{max-height:200px}
+.lk{background:none;border:0;color:var(--tx);font:inherit;font-weight:600;text-align:left;padding:0;text-decoration:underline;text-decoration-color:var(--ac);text-underline-offset:4px}
+h2 .lk{font-size:18px;font-weight:700}
+.ov{position:fixed;inset:0;background:#000b;z-index:9;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom))}
+.sheet{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.sheet svg{width:100%;height:auto;background:var(--bg);border-radius:12px;margin:8px 0}
+a.btn{text-decoration:none;text-align:center}
 .row{display:flex;gap:10px}.row .btn{margin-top:10px}
 </style></head><body><div id="app"></div><nav id="nav"></nav>
 <script>
@@ -38,6 +44,43 @@ const load=(k,d)=>{try{const v=JSON.parse(localStorage[K+k]);return v==null?d:v}
 const save=(k,v)=>{try{localStorage[K+k]=JSON.stringify(v);return true}catch{alert('Spazio pieno: esporta un backup e libera spazio.');return false}};
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const EX=[['squat','Squat a corpo libero','gambe','libero'],['goblet','Goblet squat','gambe','manubri'],['press','Leg press','gambe','palestra'],['lunge','Affondi','gambe','libero'],['hinge','Stacco rumeno con manubri','gambe','manubri'],['bridge','Ponte glutei','gambe','libero'],['pushup','Piegamenti','spinta','libero'],['dbpress','Distensioni manubri su panca','spinta','manubri'],['bench','Chest press','spinta','palestra'],['shoulder','Shoulder press manubri','spinta','manubri'],['dip','Dip assistiti','spinta','palestra'],['row','Rematore manubrio','tirata','manubri'],['bandrow','Rematore con elastico','tirata','elastici'],['pulldown','Lat machine','tirata','palestra'],['pullapart','Aperture elastico','tirata','elastici'],['reverse','Reverse fly manubri','tirata','manubri'],['plank','Plank','core','libero'],['deadbug','Dead bug','core','libero'],['bird','Bird dog','core','libero'],['calf','Calf raise','gambe','libero'],['curl','Curl manubri','tirata','manubri']].map(([id,name,group,equipment])=>({id,name,group,equipment}));
+const EQ={libero:['🧍','Corpo libero, nessun attrezzo'],manubri:['🏋️','Manubri'],elastici:['➰','Elastico di resistenza'],palestra:['🏢','Macchinario o panca di palestra']};
+const MN={spal:'Spalle',pett:'Petto',addo:'Addome',bic:'Bicipiti',quad:'Quadricipiti',trap:'Trapezio',dors:'Dorsali',tric:'Tricipiti',lomb:'Lombari',glut:'Glutei',femo:'Femorali',polp:'Polpacci'};
+const Z={spal:['fb',[[-23,31,7,8],[23,31,7,8]]],pett:['f',[[-9,38,10,8],[9,38,10,8]]],addo:['f',[[0,62,9,16]]],bic:['f',[[-26,48,4.5,11],[26,48,4.5,11]]],quad:['f',[[-10,110,8,24],[10,110,8,24]]],trap:['b',[[0,32,13,8]]],dors:['b',[[-10,52,9,13],[10,52,9,13]]],tric:['b',[[-26,46,4.5,12],[26,46,4.5,12]]],lomb:['b',[[0,72,9,7]]],glut:['b',[[-9,90,10,9],[9,90,10,9]]],femo:['b',[[-10,118,8,20],[10,118,8,20]]],polp:['b',[[-10,152,6,14],[10,152,6,14]]]};
+const INFO={squat:['quad glut','femo addo',"Piedi larghi come le spalle, scendi con la schiena dritta e le ginocchia in linea con le punte."],
+goblet:['quad glut','addo',"Tieni il manubrio al petto con i gomiti in basso e scendi tra le gambe con il busto eretto."],
+press:['quad glut','femo',"Schiena appoggiata, spingi con tutto il piede senza bloccare le ginocchia in alto."],
+lunge:['quad glut','femo',"Passo lungo, ginocchio anteriore sopra la caviglia, scendi in verticale."],
+hinge:['femo glut','lomb dors',"Spingi il bacino indietro con le ginocchia morbide, manubri vicini alle gambe e schiena neutra."],
+bridge:['glut','femo lomb',"Da supino spingi sui talloni e solleva il bacino, stringendo i glutei in alto."],
+pushup:['pett tric','spal addo',"Corpo in linea da testa a talloni, gomiti a circa 45° dal busto. Se è troppo difficile, appoggia le ginocchia."],
+dbpress:['pett tric','spal',"Da sdraiato su panca scendi con controllo ai lati del petto e spingi senza inarcare troppo la schiena."],
+bench:['pett tric','spal',"Impugnature all'altezza del petto, spingi in avanti con le spalle basse e indietro."],
+shoulder:['spal','tric trap',"Spingi sopra la testa senza inarcare la zona lombare, addome contratto."],
+dip:['tric pett','spal',"Usa l'assistenza per scendere con controllo, tenendo le spalle lontane dalle orecchie."],
+row:['dors','bic trap',"Una mano e un ginocchio sulla panca, tira il manubrio verso l'anca con la schiena piatta."],
+bandrow:['dors','bic trap',"Tira l'elastico verso il busto avvicinando le scapole e rilascia lentamente."],
+pulldown:['dors','bic',"Tira la barra verso la parte alta del petto, petto aperto, senza dondolare."],
+pullapart:['trap spal','dors',"Braccia tese davanti, allarga l'elastico aprendo le braccia e chiudendo le scapole."],
+reverse:['spal trap','dors',"Busto inclinato in avanti, apri le braccia ai lati con i gomiti leggermente flessi."],
+plank:['addo','spal glut',"Gomiti sotto le spalle, corpo in linea, addome e glutei contratti, respira regolarmente."],
+deadbug:['addo','',"Da supino estendi braccio e gamba opposti, tenendo la zona lombare a contatto con il pavimento."],
+bird:['lomb glut','addo spal',"A quattro zampe estendi braccio e gamba opposti senza ruotare il bacino."],
+calf:['polp','',"Sali sulle punte con controllo, fai una pausa in alto e scendi lentamente."],
+curl:['bic','',"Gomiti fermi lungo i fianchi, sali senza dondolare il busto."]};
+function body(pri,sec){
+ const fig=(cx,v,t)=>`<circle cx="${cx}" cy="12" r="9" fill="var(--line)"/><rect x="${cx-20}" y="24" width="40" height="58" rx="12" fill="var(--line)"/><rect x="${cx-30}" y="26" width="9" height="52" rx="4.5" fill="var(--line)"/><rect x="${cx+21}" y="26" width="9" height="52" rx="4.5" fill="var(--line)"/><rect x="${cx-19}" y="84" width="17" height="88" rx="8" fill="var(--line)"/><rect x="${cx+2}" y="84" width="17" height="88" rx="8" fill="var(--line)"/>`
+ +Object.entries(Z).filter(([k,z])=>z[0].includes(v)&&(pri.includes(k)||sec.includes(k))).map(([k,z])=>z[1].map(([x,y,rx,ry])=>`<ellipse cx="${cx+x}" cy="${y}" rx="${rx}" ry="${ry}" fill="var(--ac)" fill-opacity="${pri.includes(k)?1:.4}"/>`).join('')).join('')
+ +`<text x="${cx}" y="186" text-anchor="middle" font-size="9" fill="var(--mut)">${t}</text>`;
+ return `<svg viewBox="0 0 200 192" role="img" aria-label="Muscoli coinvolti">${fig(50,'f','Davanti')}${fig(150,'b','Dietro')}</svg>`}
+function sheet(){
+ const e=EX.find(x=>x.id===S.info);if(!e)return '';
+ const [a,b,tip]=INFO[e.id],pri=a.split(' ').filter(Boolean),sec=b.split(' ').filter(Boolean),q=EQ[e.equipment];
+ return `<div class="ov"><div class="sheet"><h2>${esc(e.name)}</h2><p>${q[0]} ${q[1]}</p>${body(pri,sec)}
+ <p><b style="color:var(--tx)">Muscoli principali:</b> ${pri.map(k=>MN[k]).join(', ')}</p>${sec.length?`<p><b style="color:var(--tx)">Secondari:</b> ${sec.map(k=>MN[k]).join(', ')}</p>`:''}
+ <p style="color:var(--tx)">${tip}</p><p>Se senti dolore, interrompi l'esercizio.</p>
+ <a class="btn s" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name+' esecuzione corretta')}">Guarda un video (serve internet)</a>
+ <button class="btn" data-a="closeinfo">Chiudi</button></div></div>`}
 function generate(p,c){
  const n=Math.max(2,Math.min(5,+p.days||3));
  const el=EX.filter(e=>e.equipment==='libero'||p.equipment==='palestra'||e.equipment===p.equipment);
@@ -56,7 +99,7 @@ function suggest(logs){
  if(r.filter(s=>s.entries.length&&s.entries.every(e=>+e.rpe>0&&+e.rpe<=7)).length>=2)return 'Due sedute gestibili: puoi valutare un piccolo incremento del carico (2–5%) mantenendo la tecnica.';
  return 'Continua il programma e registra carichi, ripetizioni e fatica. Rivaluta dopo 4–8 settimane.'}
 const EMPTY={age:'',height:'',weight:'',goal:'salute',level:'principiante',days:'3',equipment:'palestra',limitations:''};
-let S={tab:'Home',profile:load('profile',null),cycle:load('cycle',0),logs:load('logs',[]),photos:load('photos',{}),day:0,stage:'iniziali',entries:{},notes:''};
+let S={info:null,tab:'Home',profile:load('profile',null),cycle:load('cycle',0),logs:load('logs',[]),photos:load('photos',{}),day:0,stage:'iniziali',entries:{},notes:''};
 let P=S.profile||{...EMPTY};
 const TABS=['Home','Profilo','Schede','Diario','Foto'],VIEWS=['frontale','laterale','posteriore'],STAGES=['iniziali','30 giorni'];
 const choices=(l,opts,val,act)=>`<label>${l}</label><div class="ch">${opts.map(o=>`<button data-a="${act}" data-v="${esc(o)}" class="${val===o?'on':''}">${esc(o)}</button>`).join('')}</div>`;
@@ -73,10 +116,10 @@ function view(){
  <label>Limitazioni o esercizi da evitare (testo libero)</label><textarea data-f="limitations" rows="3">${esc(P.limitations)}</textarea>
  <p>Le limitazioni sono annotate ma non interpretate: in presenza di dolore, infortuni o patologie fai valutare il programma a un professionista.</p><button class="btn" data-a="saveProfile">Salva profilo e genera schede</button>`;
  if(S.tab==='Schede')return `<h1>Le tue schede</h1>${!saved?need():`<p>Ciclo ${S.cycle+1}. Proposte basate su obiettivo, esperienza, giorni e attrezzatura. Interrompi gli esercizi che causano dolore.</p>
- ${plan.map((d,i)=>`<div class="card"><h2>Giorno ${i+1}</h2>${d.map(e=>`<div class="ex"><span>${esc(e.name)}</span><span>${e.sets} × ${e.reps} · ${e.rest}s</span></div>`).join('')}<button class="btn s" data-a="log" data-v="${i}">Registra questa seduta</button></div>`).join('')}
+ ${plan.map((d,i)=>`<div class="card"><h2>Giorno ${i+1}</h2>${d.map(e=>`<div class="ex"><span><button class="lk" data-a="info" data-v="${e.id}">${esc(e.name)}</button></span><span>${e.sets} × ${e.reps} · ${e.rest}s</span></div>`).join('')}<button class="btn s" data-a="log" data-v="${i}">Registra questa seduta</button></div>`).join('')}
  <p>${suggest(S.logs)}</p><button class="btn" data-a="cycle">Proponi una nuova scheda</button>`}`;
  if(S.tab==='Diario'){const d=plan[Math.min(S.day,plan.length-1)];return `<h1>Diario allenamenti</h1>${!saved?need():`${choices('Giorno da registrare',plan.map((_,i)=>String(i+1)),String(S.day+1),'day')}
- ${d.map(e=>{const v=S.entries[e.id]||{};return `<div class="card"><h2>${esc(e.name)}</h2><p>Previsto: ${e.sets} serie × ${e.reps}</p>
+ ${d.map(e=>{const v=S.entries[e.id]||{};return `<div class="card"><h2><button class="lk" data-a="info" data-v="${e.id}">${esc(e.name)}</button></h2><p>Previsto: ${e.sets} serie × ${e.reps}</p>
  <label>Carico (kg, se applicabile)</label><input data-e="${e.id}.w" inputmode="decimal" value="${esc(v.w)}">
  <label>Ripetizioni svolte (es. 10,10,9)</label><input data-e="${e.id}.r" value="${esc(v.r)}">
  <label>Fatica percepita (RPE 1–10)</label><div class="ch">${[5,6,7,8,9,10].map(n=>`<button data-a="rpe" data-v="${e.id}.${n}" class="${v.rpe==n?'on':''}">${n}</button>`).join('')}</div></div>`}).join('')}
@@ -85,10 +128,12 @@ function view(){
  return `<h1>Progressi fotografici</h1><p>Le foto restano su questo dispositivo, ridimensionate per risparmiare spazio.</p>${choices('Periodo',STAGES,S.stage,'stage')}
  ${VIEWS.map(v=>{const k=`${S.stage}|${v}`;return `<div class="card"><h2>${v}</h2>${S.photos[k]?`<img class="ph" alt="${v}" src="${S.photos[k]}">`:'<p>Nessuna fotografia</p>'}<label class="btn" style="text-align:center;margin-top:12px">Scatta o scegli foto<input type="file" accept="image/*" hidden data-p="${k}"></label></div>`}).join('')}
  <h2>Confronto</h2>${VIEWS.map(v=>`<div class="card"><h2>${v}</h2><div class="two">${STAGES.map(st=>`<div><p>${st}</p>${S.photos[`${st}|${v}`]?`<img class="ph" alt="" src="${S.photos[`${st}|${v}`]}">`:'<p>—</p>'}</div>`).join('')}</div></div>`).join('')}`}
-function render(){const y=scrollY;$('#app').innerHTML=view();$('#nav').innerHTML=TABS.map(t=>`<button data-a="tab" data-v="${t}" class="${S.tab===t?'on':''}">${t}</button>`).join('');scrollTo(0,y)}
+function render(){const y=scrollY;$('#app').innerHTML=view()+sheet();$('#nav').innerHTML=TABS.map(t=>`<button data-a="tab" data-v="${t}" class="${S.tab===t?'on':''}">${t}</button>`).join('');scrollTo(0,y)}
 const go=t=>{S.tab=t;render();scrollTo(0,0)};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
- if(a==='tab')return go(v);
+ if(a==='tab'){S.info=null;return go(v)}
+ if(a==='info'){S.info=v;return render()}
+ if(a==='closeinfo'){S.info=null;return render()}
  if(['goal','level','days','equipment'].includes(a)){P[a]=v;return render()}
  if(a==='day'){S.day=+v-1;S.entries={};return render()}
  if(a==='stage'){S.stage=v;return render()}
