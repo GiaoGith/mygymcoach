@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Gym Coach</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#14171c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym Coach">
+<style>
+:root{--bg:#14171c;--card:#1e232b;--line:#2c333e;--tx:#eef1f5;--mut:#9aa5b4;--ac:#5b8cff;--ac2:#3a5fcf}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:640px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
+h1{font-size:26px;margin:4px 0 14px;letter-spacing:-.02em}h2{font-size:18px;margin:0 0 8px}
+p,.m{color:var(--mut);font-size:14px;margin:6px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 6px}
+input,textarea{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.ch{display:flex;flex-wrap:wrap;gap:8px}
+.ch button{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font:inherit}
+.ch button.on{background:var(--ac2);border-color:var(--ac)}
+.btn{display:block;width:100%;margin-top:14px;background:var(--ac);color:#fff;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:700}
+.btn.s{background:#2c333e}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#181c22;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:13px 0;font:inherit;font-size:13px}
+nav button.on{color:var(--ac);font-weight:700}
+.ex{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.ex:first-of-type{border:0}.ex span:last-child{color:var(--mut);white-space:nowrap;font-size:14px}
+img.ph{width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#000;margin-top:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.two img{max-height:200px}
+.row{display:flex;gap:10px}.row .btn{margin-top:10px}
+</style></head><body><div id="app"></div><nav id="nav"></nav>
+<script>
+const $=s=>document.querySelector(s),K='mgc.';
+const load=(k,d)=>{try{const v=JSON.parse(localStorage[K+k]);return v==null?d:v}catch{return d}};
+const save=(k,v)=>{try{localStorage[K+k]=JSON.stringify(v);return true}catch{alert('Spazio pieno: esporta un backup e libera spazio.');return false}};
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const EX=[['squat','Squat a corpo libero','gambe','libero'],['goblet','Goblet squat','gambe','manubri'],['press','Leg press','gambe','palestra'],['lunge','Affondi','gambe','libero'],['hinge','Stacco rumeno con manubri','gambe','manubri'],['bridge','Ponte glutei','gambe','libero'],['pushup','Piegamenti','spinta','libero'],['dbpress','Distensioni manubri su panca','spinta','manubri'],['bench','Chest press','spinta','palestra'],['shoulder','Shoulder press manubri','spinta','manubri'],['dip','Dip assistiti','spinta','palestra'],['row','Rematore manubrio','tirata','manubri'],['bandrow','Rematore con elastico','tirata','elastici'],['pulldown','Lat machine','tirata','palestra'],['pullapart','Aperture elastico','tirata','elastici'],['reverse','Reverse fly manubri','tirata','manubri'],['plank','Plank','core','libero'],['deadbug','Dead bug','core','libero'],['bird','Bird dog','core','libero'],['calf','Calf raise','gambe','libero'],['curl','Curl manubri','tirata','manubri']].map(([id,name,group,equipment])=>({id,name,group,equipment}));
+function generate(p,c){
+ const n=Math.max(2,Math.min(5,+p.days||3));
+ const el=EX.filter(e=>e.equipment==='libero'||p.equipment==='palestra'||e.equipment===p.equipment);
+ const A=['gambe','spinta','tirata','core'],B=['gambe','tirata','spinta','core'];
+ const groups=n<=3?[A,B,A].slice(0,n):Array.from({length:n},(_,i)=>i%2?['spinta','tirata','spinta','core']:['gambe','gambe','core','tirata']);
+ const sets=p.level==='principiante'?2:p.level==='avanzato'?4:3;
+ const reps=p.goal==='forza'?'5-8':p.goal==='resistenza'?'12-18':'8-12',rest=p.goal==='forza'?150:90;
+ return groups.map((gs,d)=>{const used=new Set();return gs.map((g,j)=>{
+  let o=el.filter(e=>e.group===g&&!used.has(e.id));
+  if(!o.length)o=el.filter(e=>e.group!=='core'&&!used.has(e.id));
+  const e=o[(c+d+j)%o.length];used.add(e.id);return{...e,sets,reps,rest}})})}
+function suggest(logs){
+ if(logs.length<2)return 'Registra almeno due allenamenti prima di valutare variazioni.';
+ const r=logs.slice(-4);
+ if(r.filter(s=>s.entries.some(e=>+e.rpe>=9)).length>=2)return 'Fatica elevata in più sedute: valuta una settimana più leggera (meno serie o carico ridotto del 5–10%).';
+ if(r.filter(s=>s.entries.length&&s.entries.every(e=>+e.rpe>0&&+e.rpe<=7)).length>=2)return 'Due sedute gestibili: puoi valutare un piccolo incremento del carico (2–5%) mantenendo la tecnica.';
+ return 'Continua il programma e registra carichi, ripetizioni e fatica. Rivaluta dopo 4–8 settimane.'}
+const EMPTY={age:'',height:'',weight:'',goal:'salute',level:'principiante',days:'3',equipment:'palestra',limitations:''};
+let S={tab:'Home',profile:load('profile',null),cycle:load('cycle',0),logs:load('logs',[]),photos:load('photos',{}),day:0,stage:'iniziali',entries:{},notes:''};
+let P=S.profile||{...EMPTY};
+const TABS=['Home','Profilo','Schede','Diario','Foto'],VIEWS=['frontale','laterale','posteriore'],STAGES=['iniziali','30 giorni'];
+const choices=(l,opts,val,act)=>`<label>${l}</label><div class="ch">${opts.map(o=>`<button data-a="${act}" data-v="${esc(o)}" class="${val===o?'on':''}">${esc(o)}</button>`).join('')}</div>`;
+const field=(l,k,mode)=>`<label>${l}</label><input data-f="${k}" ${mode?`inputmode="${mode}"`:''} value="${esc(P[k])}">`;
+const need=()=>`<div class="card"><p>Compila prima il profilo.</p><button class="btn" data-a="tab" data-v="Profilo">Vai al profilo</button></div>`;
+function view(){
+ const plan=generate(P,S.cycle),saved=!!S.profile;
+ if(S.tab==='Home')return `<h1>My Gym Coach</h1><p>Questionario, schede e progressi salvati su questo dispositivo, senza account né servizi online.</p>
+ <div class="card"><h2>${saved?'Profilo configurato':'Inizia dal questionario'}</h2><p>${saved?`${esc(P.days)} giorni a settimana, obiettivo ${esc(P.goal)}, livello ${esc(P.level)}`:'Compila il profilo per generare la prima scheda.'}</p><button class="btn" data-a="tab" data-v="${saved?'Schede':'Profilo'}">${saved?'Apri le mie schede':'Compila il questionario'}</button></div>
+ <div class="card"><h2>Progressi</h2><p>${S.logs.length} allenamenti registrati</p><p>${suggest(S.logs)}</p><button class="btn s" data-a="tab" data-v="Diario">Apri il diario</button></div>
+ <div class="card"><h2>Backup</h2><p>I dati restano solo su questo dispositivo: esporta un backup prima di cancellare l'app o cambiare telefono.</p><div class="row"><button class="btn s" data-a="export">Esporta</button><button class="btn s" data-a="import">Importa</button></div></div>`;
+ if(S.tab==='Profilo')return `<h1>Il tuo profilo</h1>${field('Età (anni)','age','numeric')}${field('Altezza (cm)','height','numeric')}${field('Peso (kg)','weight','decimal')}
+ ${choices('Obiettivo',['salute','ipertrofia','forza','resistenza'],P.goal,'goal')}${choices('Esperienza',['principiante','intermedio','avanzato'],P.level,'level')}${choices('Giorni disponibili',['2','3','4','5'],P.days,'days')}${choices('Attrezzatura',['libero','manubri','elastici','palestra'],P.equipment,'equipment')}
+ <label>Limitazioni o esercizi da evitare (testo libero)</label><textarea data-f="limitations" rows="3">${esc(P.limitations)}</textarea>
+ <p>Le limitazioni sono annotate ma non interpretate: in presenza di dolore, infortuni o patologie fai valutare il programma a un professionista.</p><button class="btn" data-a="saveProfile">Salva profilo e genera schede</button>`;
+ if(S.tab==='Schede')return `<h1>Le tue schede</h1>${!saved?need():`<p>Ciclo ${S.cycle+1}. Proposte basate su obiettivo, esperienza, giorni e attrezzatura. Interrompi gli esercizi che causano dolore.</p>
+ ${plan.map((d,i)=>`<div class="card"><h2>Giorno ${i+1}</h2>${d.map(e=>`<div class="ex"><span>${esc(e.name)}</span><span>${e.sets} × ${e.reps} · ${e.rest}s</span></div>`).join('')}<button class="btn s" data-a="log" data-v="${i}">Registra questa seduta</button></div>`).join('')}
+ <p>${suggest(S.logs)}</p><button class="btn" data-a="cycle">Proponi una nuova scheda</button>`}`;
+ if(S.tab==='Diario'){const d=plan[Math.min(S.day,plan.length-1)];return `<h1>Diario allenamenti</h1>${!saved?need():`${choices('Giorno da registrare',plan.map((_,i)=>String(i+1)),String(S.day+1),'day')}
+ ${d.map(e=>{const v=S.entries[e.id]||{};return `<div class="card"><h2>${esc(e.name)}</h2><p>Previsto: ${e.sets} serie × ${e.reps}</p>
+ <label>Carico (kg, se applicabile)</label><input data-e="${e.id}.w" inputmode="decimal" value="${esc(v.w)}">
+ <label>Ripetizioni svolte (es. 10,10,9)</label><input data-e="${e.id}.r" value="${esc(v.r)}">
+ <label>Fatica percepita (RPE 1–10)</label><div class="ch">${[5,6,7,8,9,10].map(n=>`<button data-a="rpe" data-v="${e.id}.${n}" class="${v.rpe==n?'on':''}">${n}</button>`).join('')}</div></div>`}).join('')}
+ <label>Note sulla seduta</label><textarea data-n rows="2">${esc(S.notes)}</textarea><button class="btn" data-a="saveLog">Salva allenamento</button>`}
+ ${S.logs.slice().reverse().map(l=>`<div class="card"><h2>${esc(l.date)} · Giorno ${l.day+1}</h2>${l.entries.map(e=>`<p>${esc(e.name)}: ${esc(e.w||'—')} kg · ${esc(e.r||'—')} rip. · RPE ${esc(e.rpe||'—')}</p>`).join('')}${l.notes?`<p>${esc(l.notes)}</p>`:''}<button class="btn s" data-a="delLog" data-v="${l.id}">Elimina</button></div>`).join('')}`}
+ return `<h1>Progressi fotografici</h1><p>Le foto restano su questo dispositivo, ridimensionate per risparmiare spazio.</p>${choices('Periodo',STAGES,S.stage,'stage')}
+ ${VIEWS.map(v=>{const k=`${S.stage}|${v}`;return `<div class="card"><h2>${v}</h2>${S.photos[k]?`<img class="ph" alt="${v}" src="${S.photos[k]}">`:'<p>Nessuna fotografia</p>'}<label class="btn" style="text-align:center;margin-top:12px">Scatta o scegli foto<input type="file" accept="image/*" hidden data-p="${k}"></label></div>`}).join('')}
+ <h2>Confronto</h2>${VIEWS.map(v=>`<div class="card"><h2>${v}</h2><div class="two">${STAGES.map(st=>`<div><p>${st}</p>${S.photos[`${st}|${v}`]?`<img class="ph" alt="" src="${S.photos[`${st}|${v}`]}">`:'<p>—</p>'}</div>`).join('')}</div></div>`).join('')}`}
+function render(){const y=scrollY;$('#app').innerHTML=view();$('#nav').innerHTML=TABS.map(t=>`<button data-a="tab" data-v="${t}" class="${S.tab===t?'on':''}">${t}</button>`).join('');scrollTo(0,y)}
+const go=t=>{S.tab=t;render();scrollTo(0,0)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
+ if(a==='tab')return go(v);
+ if(['goal','level','days','equipment'].includes(a)){P[a]=v;return render()}
+ if(a==='day'){S.day=+v-1;S.entries={};return render()}
+ if(a==='stage'){S.stage=v;return render()}
+ if(a==='rpe'){const[id,n]=v.split('.');(S.entries[id]=S.entries[id]||{}).rpe=n;return render()}
+ if(a==='log'){S.day=+v;S.entries={};return go('Diario')}
+ if(a==='saveProfile'){if(!+P.age||!+P.height||!+P.weight){return alert('Inserisci età, altezza e peso.')}if(save('profile',P)){S.profile={...P};go('Schede')}return}
+ if(a==='cycle'){if(confirm('La nuova scheda cambierà alcune varianti degli esercizi. Confermi?')){S.cycle++;save('cycle',S.cycle);S.entries={};render()}return}
+ if(a==='saveLog'){const plan=generate(P,S.cycle)[S.day];
+  const es=plan.map(x=>({id:x.id,name:x.name,w:'',r:'',rpe:'',...S.entries[x.id]})).filter(x=>(x.r||'').trim()||(x.w||'').trim());
+  if(!es.length)return alert('Inserisci almeno un risultato.');
+  const next=[...S.logs,{id:String(Date.now()),date:new Date().toISOString().slice(0,10),day:S.day,entries:es,notes:S.notes}];
+  if(save('logs',next)){S.logs=next;S.entries={};S.notes='';render();alert('Allenamento salvato.')}return}
+ if(a==='delLog'){if(confirm('Eliminare questo allenamento?')){S.logs=S.logs.filter(l=>l.id!==v);save('logs',S.logs);render()}return}
+ if(a==='export'){const blob=new Blob([JSON.stringify({v:1,profile:S.profile,cycle:S.cycle,logs:S.logs,photos:S.photos})],{type:'application/json'});
+  const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download='mygymcoach-backup-'+new Date().toISOString().slice(0,10)+'.json';l.click();return}
+ if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='application/json,.json';i.onchange=async()=>{try{const d=JSON.parse(await i.files[0].text());
+  if(!confirm('Importando sostituirai i dati attuali. Procedere?'))return;
+  S.profile=d.profile;P=d.profile?{...d.profile}:{...EMPTY};S.cycle=d.cycle||0;S.logs=d.logs||[];S.photos=d.photos||{};
+  save('profile',S.profile);save('cycle',S.cycle);save('logs',S.logs);save('photos',S.photos);render()}catch{alert('File di backup non valido.')}};i.click()}});
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.dataset.f)P[t.dataset.f]=t.value;
+ else if(t.dataset.e){const[id,k]=t.dataset.e.split('.');(S.entries[id]=S.entries[id]||{})[k]=t.value}
+ else if('n' in t.dataset)S.notes=t.value});
+document.addEventListener('change',async e=>{const t=e.target,k=t.dataset.p;if(!k||!t.files[0])return;
+ try{const img=new Image();img.src=URL.createObjectURL(t.files[0]);await img.decode();
+  const r=Math.min(1,720/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  const next={...S.photos,[k]:c.toDataURL('image/jpeg',.7)};if(save('photos',next)){S.photos=next;render()}}
+ catch{alert('Impossibile leggere la foto.')}});
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+render();
+</script></body></html>
